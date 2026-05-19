@@ -1,109 +1,137 @@
-import { useParams, Link } from 'react-router';
-import { ChevronLeft, Book, User } from 'lucide-react';
-import { courses } from '../data/courses';
+import { useEffect, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { supabase } from '../lib/supabaseClient'
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
+import { Loader2, BookOpen, ChevronRight, ArrowLeft } from 'lucide-react'
 
-export function DepartmentDetail() {
-  const { name } = useParams();
-  const departmentName = decodeURIComponent(name || '');
-  const departmentCourses = courses.filter(c => c.department === departmentName);
+interface Department {
+  name: string
+  code: string
+  description: string | null
+}
 
-  if (departmentCourses.length === 0) {
+interface Course {
+  id: string
+  title: string
+  course_number: string
+  credits: number
+  description: string | null
+}
+
+export default function DepartmentDetail() {
+  const { id } = useParams<{ id: string }>()
+  const [department, setDepartment] = useState<Department | null>(null)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchDepartmentData() {
+      if (!id) return
+      try {
+        setLoading(true)
+        
+        // Fetch specific metadata
+        const { data: deptData, error: deptError } = await supabase
+          .from('departments')
+          .select('name, code, description')
+          .eq('id', id)
+          .single()
+
+        if (deptError) throw deptError
+        setDepartment(deptData as Department)
+
+        // Fetch associated courses running under this foreign key relation
+        const { data: courseData, error: courseError } = await supabase
+          .from('courses')
+          .select('id, title, course_number, credits, description')
+          .eq('department_id', id)
+          .order('course_number', { ascending: true })
+
+        if (courseError) throw courseError
+        setCourses((courseData as Course[]) || [])
+
+      } catch (err: any) {
+        console.error('Error syncing department data details:', err)
+        setError(err.message || 'Failed to download course registry lists.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDepartmentData()
+  }, [id])
+
+  if (loading) {
     return (
-      <div className="px-4 md:px-6 py-12">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-semibold mb-4">Department Not Found</h1>
-          <Link to="/departments" className="text-blue-600 hover:text-blue-700">
-            Return to Departments
-          </Link>
-        </div>
+      <div className="flex h-64 items-center justify-center gap-2 text-slate-500">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+        <span>Compiling database registry...</span>
       </div>
-    );
+    )
   }
 
-  const professors = new Set(departmentCourses.flatMap(c => c.professors.map(p => p.name)));
-
-  return (
-    <div className="px-4 md:px-6 py-6">
-      <div className="max-w-6xl mx-auto">
-        <Link
-          to="/departments"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-        >
-          <ChevronLeft size={18} />
-          Back to Departments
+  if (error || !department) {
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
+        <Link to="/departments" className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
+          <ArrowLeft size={16} /> Back to Departments
         </Link>
-
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg px-8 py-8 text-white mb-6">
-          <h1 className="text-3xl font-semibold mb-4">{departmentName}</h1>
-          <div className="flex flex-wrap gap-6 text-blue-100">
-            <div>
-              <span className="text-2xl font-semibold text-white">{departmentCourses.length}</span>
-              <span className="ml-2">Course{departmentCourses.length !== 1 ? 's' : ''}</span>
-            </div>
-            <div>
-              <span className="text-2xl font-semibold text-white">{professors.size}</span>
-              <span className="ml-2">Instructor{professors.size !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
-        </div>
-
-        <h2 className="font-semibold text-xl mb-4">Courses</h2>
-
-        <div className="grid gap-4">
-          {departmentCourses.map(course => (
-            <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-white/20 px-3 py-1 rounded text-sm font-semibold">{course.code}</span>
-                    <h3 className="font-semibold">{course.name}</h3>
-                  </div>
-                  <Link
-                    to={`/course/${course.id}`}
-                    className="bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded text-sm transition-colors"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <p className="text-gray-700 mb-4">{course.description}</p>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <User size={16} className="text-gray-600" />
-                      <h4 className="font-medium text-sm text-gray-900">
-                        Instructor{course.professors.length > 1 ? 's' : ''}
-                      </h4>
-                    </div>
-                    <div className="ml-6 space-y-1">
-                      {course.professors.map((prof, idx) => (
-                        <p key={idx} className="text-sm text-gray-600">{prof.name}</p>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Book size={16} className="text-gray-600" />
-                      <h4 className="font-medium text-sm text-gray-900">
-                        {course.textbooks.length} Textbook{course.textbooks.length !== 1 ? 's' : ''}
-                      </h4>
-                    </div>
-                    <div className="ml-6 space-y-1">
-                      {course.textbooks.map((book, idx) => (
-                        <p key={idx} className="text-sm text-gray-600">{book.title}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+          <strong>Registry Search Exception:</strong> {error || 'Academic record identifier missing.'}
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto p-6 max-w-5xl">
+      <Link to="/departments" className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 mb-6 group">
+        <ArrowLeft size={16} className="transform group-hover:-translate-x-1 transition-transform" /> Back to Departments
+      </Link>
+
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm mb-8">
+        <div className="flex flex-wrap items-center gap-4 mb-4">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{department.name}</h1>
+          <span className="text-sm font-bold font-mono bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full">
+            {department.code} Division
+          </span>
+        </div>
+        <p className="text-slate-600 text-lg leading-relaxed max-w-3xl">
+          {department.description || 'No formal description details cataloged for this academic timeline segment branch context.'}
+        </p>
+      </div>
+
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <BookOpen size={22} className="text-blue-600" /> Cataloged Course Modules ({courses.length})
+      </h2>
+
+      {courses.length === 0 ? (
+        <div className="text-center py-12 text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+          No courses are currently published under this field of study.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {courses.map((course) => (
+            <Card key={course.id} className="hover:shadow-sm border-slate-200 transition-shadow flex flex-col justify-between">
+              <CardHeader className="p-6 pb-4">
+                <span className="text-xs font-bold font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded w-fit">
+                  {department.code}-{course.course_number}
+                </span>
+                <CardTitle className="text-lg font-bold text-slate-900 mt-2">{course.title}</CardTitle>
+                <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                  {course.description || 'No lecture abstract has been published for this curriculum track entry section.'}
+                </p>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 pt-0 flex justify-between items-center border-t border-slate-50 mt-auto">
+                <span className="text-xs font-semibold text-slate-500">{course.credits} Academic Credits</span>
+                <Link to={`/courses/${course.id}`} className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
+                  View Requisites <ChevronRight size={16} />
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
-  );
+  )
 }

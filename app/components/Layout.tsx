@@ -1,62 +1,59 @@
-import { Outlet, Link, useLocation } from 'react-router';
-import { GraduationCap, Home, Building2 } from 'lucide-react';
+import { Outlet, Link, useLocation } from 'react-router'
+import { GraduationCap, Home, Building2 } from 'lucide-react'
 
-export function Layout() {
-  const location = useLocation();
+export default function Layout() {
+  const location = useLocation()
 
   const isActive = (path: string) => {
     if (path === '/') {
-      return location.pathname === '/';
+      return location.pathname === '/'
     }
-    return location.pathname.startsWith(path);
-  };
+    return location.pathname.startsWith(path)
+  }
+
+  const linkClass = (path: string) => {
+    const base = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+    return isActive(path)
+      ? `${base} bg-blue-50 text-blue-700 font-semibold`
+      : `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900`
+  }
 
   return (
-    <div className="size-full flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <GraduationCap className="text-blue-600" size={32} />
-              <div>
-                <h1 className="font-semibold text-xl">Course Textbook Directory</h1>
-                <p className="text-sm text-gray-600">Fall 2026 Semester</p>
-              </div>
-            </Link>
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+      {/* Central Navigation Bar */}
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          {/* Logo Header Brand */}
+          <Link to="/" className="flex items-center gap-2 text-blue-700 font-extrabold text-xl tracking-tight">
+            <GraduationCap className="h-6 w-6" />
+            <span>CourseRegistry</span>
+          </Link>
 
-            <nav className="flex items-center gap-1">
-              <Link
-                to="/"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  isActive('/') && location.pathname === '/'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                <Home size={18} />
-                <span className="hidden md:inline">Home</span>
-              </Link>
-              <Link
-                to="/departments"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  isActive('/departments')
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                <Building2 size={18} />
-                <span className="hidden md:inline">Departments</span>
-              </Link>
-            </nav>
+          {/* Navigation Action Links */}
+          <div className="flex items-center gap-2">
+            <Link to="/" className={linkClass('/')}>
+              <Home className="h-4 w-4" />
+              <span>Home</span>
+            </Link>
+            <Link to="/departments" className={linkClass('/departments')}>
+              <Building2 className="h-4 w-4" />
+              <span>Departments</span>
+            </Link>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      {/* Embedded Route Child View Yield Port */}
+      <div className="flex-1 w-full">
         <Outlet />
-      </main>
+      </div>
+
+      {/* Global Standard Site Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6 px-6 text-center text-xs text-slate-400 font-medium">
+        <div className="max-w-6xl mx-auto">
+          &copy; {new Date().getFullYear()} University Course Registration Management Hub. All rights reserved.
+        </div>
+      </footer>
     </div>
-  );
+  )
 }

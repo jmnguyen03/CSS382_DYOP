@@ -1,155 +1,135 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
-import { Search, Filter, Book, User, ChevronRight } from 'lucide-react';
-import { courses } from '../data/courses';
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabaseClient'
+import { BookOpen, Award, Users, ChevronRight, Loader2 } from 'lucide-react'
 
-export function Home() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All');
+// Define explicit TypeScript interfaces for safety
+interface Department {
+  name: string
+  code: string
+}
 
-  const departments = ['All', ...new Set(courses.map(c => c.department))];
+interface Course {
+  id: string
+  title: string
+  course_number: string
+  description: string | null
+  credits: number
+  departments: Department | null
+}
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch =
-      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.professors.some(prof =>
-        prof.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prof.email.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ||
-      course.textbooks.some(book =>
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    const matchesDepartment = selectedDepartment === 'All' || course.department === selectedDepartment;
-    return matchesSearch && matchesDepartment;
-  });
+export default function Home() {
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function getFeatured() {
+      try {
+        setLoading(true)
+        // Fetches your real database courses and joins department fields dynamically
+        const { data, error: dbError } = await supabase
+          .from('courses')
+          .select('id, title, course_number, description, credits, departments(name, code)')
+          .limit(3)
+        
+        if (dbError) throw dbError
+        
+        // Safely typecast the data payload to match our interface schema
+        setFeaturedCourses((data as unknown as Course[]) || [])
+      } catch (err: any) {
+        console.error('Error loading courses:', err)
+        setError(err.message || 'Failed to sync database information')
+      } finally {
+        setLoading(false)
+      }
+    }
+    getFeatured()
+  }, [])
 
   return (
-    <div className="px-4 md:px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="flex-1 flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg border border-gray-200">
-            <Search size={18} className="text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search courses, professors, or textbooks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm flex-1"
-            />
-          </div>
-          <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-lg border border-gray-200">
-            <Filter size={18} className="text-gray-500" />
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm cursor-pointer"
-            >
-              {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Hero Header Frame */}
+      <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-16 px-6 shadow-md">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
+            Academic Course Registration Hub
+          </h1>
+          <p className="mt-4 text-xl text-blue-100 max-w-2xl">
+            Browse current university catalog offerings, check prerequisite hierarchies, and manage dynamic schedules in real-time.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link to="/departments" className="bg-white text-blue-700 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-sm">
+              Explore Academic Departments
+            </Link>
           </div>
         </div>
+      </header>
 
-        <div className="mb-4 text-sm text-gray-600">
-          Showing {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''}
+      {/* Overview Metric Cards */}
+      <section className="max-w-6xl mx-auto -mt-8 px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-md border border-slate-100 flex items-center gap-4">
+          <div className="p-3 bg-blue-100 text-blue-700 rounded-lg"><BookOpen size={24} /></div>
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Active Offerings</h3>
+            <p className="text-2xl font-bold">450+ Courses</p>
+          </div>
         </div>
+        <div className="bg-white p-6 rounded-xl shadow-md border border-slate-100 flex items-center gap-4">
+          <div className="p-3 bg-indigo-100 text-indigo-700 rounded-lg"><Users size={24} /></div>
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Faculty Instructors</h3>
+            <p className="text-2xl font-bold">120+ Staff</p>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-md border border-slate-100 flex items-center gap-4">
+          <div className="p-3 bg-emerald-100 text-emerald-700 rounded-lg"><Award size={24} /></div>
+          <div>
+            <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Degree Pathways</h3>
+            <p className="text-2xl font-bold">32 Majors</p>
+          </div>
+        </div>
+      </section>
 
-        <div className="grid gap-6">
-          {filteredCourses.map(course => (
-            <div key={course.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-              {/* Course Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-white/20 px-3 py-1 rounded text-sm font-semibold">{course.code}</span>
-                      <h2 className="font-semibold text-lg">{course.name}</h2>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm opacity-90">{course.credits} credits</span>
-                    <Link
-                      to={`/course/${course.id}`}
-                      className="bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded text-sm transition-colors"
-                    >
-                      View Details
-                    </Link>
-                  </div>
+      {/* Main Database-Driven Container Block */}
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        <h2 className="text-2xl font-bold mb-6 text-slate-800">Featured Database Cataloging</h2>
+        
+        {loading ? (
+          <div className="flex justify-center items-center py-12 gap-2 text-slate-500">
+            <Loader2 className="animate-spin text-blue-600" size={20} />
+            <span>Syncing catalog with Supabase...</span>
+          </div>
+        ) : error ? (
+          <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+            <strong>Database Synchronization Error:</strong> {error}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredCourses.map((course) => (
+              <div key={course.id} className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between">
+                <div className="p-6">
+                  <span className="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-full font-mono">
+                    {course.departments?.code || 'UNKN'}-{course.course_number}
+                  </span>
+                  <h3 className="text-lg font-bold mt-3 text-slate-900">
+                    {course.title}
+                  </h3>
+                  <p className="text-slate-600 text-sm mt-2 line-clamp-3">
+                    {course.description || "No public catalog abstract details provided for this section context."}
+                  </p>
+                </div>
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-between items-center text-xs text-slate-500">
+                  <span className="font-medium text-slate-700">{course.credits} Credits</span>
+                  <Link to={`/courses/${course.id}`} className="text-blue-600 font-semibold hover:text-blue-700 inline-flex items-center gap-1">
+                    Requirements <ChevronRight size={14} />
+                  </Link>
                 </div>
               </div>
-
-              {/* Course Details */}
-              <div className="p-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Professor Info */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <User size={18} className="text-gray-600" />
-                      <h3 className="font-semibold text-gray-900">
-                        Instructor{course.professors.length > 1 ? 's' : ''}
-                      </h3>
-                    </div>
-                    <div className="ml-7 space-y-3">
-                      {course.professors.map((prof, idx) => (
-                        <div key={idx}>
-                          <p className="text-gray-900">{prof.name}</p>
-                          <p className="text-sm text-gray-600">{prof.email}</p>
-                        </div>
-                      ))}
-                      <Link
-                        to={`/departments/${encodeURIComponent(course.department)}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 pt-1"
-                      >
-                        {course.department}
-                        <ChevronRight size={14} />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Textbooks */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Book size={18} className="text-gray-600" />
-                      <h3 className="font-semibold text-gray-900">Required Textbooks</h3>
-                    </div>
-                    <div className="ml-7 space-y-4">
-                      {course.textbooks.map((book, idx) => (
-                        <div key={idx} className="border-l-2 border-blue-600 pl-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900">{book.title}</p>
-                              <p className="text-sm text-gray-600 mt-1">by {book.author}</p>
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                  {book.edition}
-                                </span>
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                  ISBN: {book.isbn}
-                                </span>
-                              </div>
-                            </div>
-                            <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
-                              book.required
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              {book.required ? 'Required' : 'Optional'}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
-  );
+  )
 }
