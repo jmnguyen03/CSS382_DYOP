@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -11,14 +11,13 @@ interface Department {
 }
 
 interface CourseDetails {
-  id: string
+  course_id: string
   title: string
-  course_number: string
+  course_code: string
   credits: number
   description: string | null
-  syllabus_abstract: string | null
   prerequisites: string | null
-  departments: Department | null
+  department: Department | null
 }
 
 export default function CourseDetail() {
@@ -36,8 +35,8 @@ export default function CourseDetail() {
         
         const { data, error: dbError } = await supabase
           .from('courses')
-          .select('id, title, course_number, credits, description, syllabus_abstract, prerequisites, departments(name, code)')
-          .eq('id', id)
+          .select('course_id, title, course_code, credits, description, prerequisites, department(name, code)')
+          .eq('course_id', id)
           .single()
 
         if (dbError) throw dbError
@@ -78,7 +77,7 @@ export default function CourseDetail() {
     <div className="container mx-auto p-6 max-w-4xl">
       {/* Dynamic Back Nav History */}
       <Link 
-        to={`/departments/${course.departments?.code ? '' : ''}`}
+        to={`/departments/${course.department?.code ? '' : ''}`}
         onClick={() => window.history.back()}
         className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 mb-6 group"
       >
@@ -91,13 +90,13 @@ export default function CourseDetail() {
         <div className="lg:col-span-2 space-y-6">
           <div className="space-y-2">
             <span className="text-sm font-bold font-mono bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full">
-              {course.departments?.code || 'UNKN'}-{course.course_number}
+              {course.department?.code || 'UNKN'}-{course.course_code}
             </span>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight pt-2">
               {course.title}
             </h1>
             <p className="text-slate-500 font-medium text-sm flex items-center gap-1">
-              <GraduationCap size={16} /> Hosted by the Department of {course.departments?.name}
+              <GraduationCap size={16} /> Hosted by the Department of {course.department?.name}
             </p>
           </div>
 
@@ -108,14 +107,6 @@ export default function CourseDetail() {
             </p>
           </div>
 
-          {course.syllabus_abstract && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold text-slate-800">Syllabus Highlights</h3>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-slate-600 text-sm leading-relaxed whitespace-pre-line">
-                {course.syllabus_abstract}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Sidebar Controls Card */}

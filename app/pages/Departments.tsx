@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Loader2, ArrowRight } from 'lucide-react'
 
 interface Department {
-  id: string
+  department_id: string
   name: string
   code: string
   description: string | null
@@ -21,8 +21,8 @@ export default function Departments() {
       try {
         setLoading(true)
         const { data, error: dbError } = await supabase
-          .from('departments')
-          .select('id, name, code, description')
+          .from('department')
+          .select('department_id, name, code, description')
           .order('name', { ascending: true })
 
         if (dbError) throw dbError
@@ -65,7 +65,7 @@ export default function Departments() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {departments.map((dept) => (
-          <Card key={dept.id} className="hover:shadow-md transition-all border-slate-200 flex flex-col justify-between">
+          <Card key={dept.department_id} className="hover:shadow-md transition-all border-slate-200 flex flex-col justify-between">
             <CardHeader>
               <div className="flex justify-between items-start gap-4">
                 <CardTitle className="text-xl font-bold text-slate-900">{dept.name}</CardTitle>
@@ -79,7 +79,7 @@ export default function Departments() {
             </CardHeader>
             <CardContent className="pt-0">
               <Link 
-                to={`/departments/${dept.id}`} 
+                to={`/departments/${dept.department_id}`}
                 className="w-full text-sm font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center justify-end gap-1 group"
               >
                 Browse Courses 

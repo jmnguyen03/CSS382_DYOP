@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Loader2, BookOpen, ChevronRight, ArrowLeft } from 'lucide-react'
@@ -11,9 +11,9 @@ interface Department {
 }
 
 interface Course {
-  id: string
+  course_id: string
   title: string
-  course_number: string
+  course_code: string
   credits: number
   description: string | null
 }
@@ -33,9 +33,9 @@ export default function DepartmentDetail() {
         
         // Fetch specific metadata
         const { data: deptData, error: deptError } = await supabase
-          .from('departments')
+          .from('department')
           .select('name, code, description')
-          .eq('id', id)
+          .eq('department_id', id)
           .single()
 
         if (deptError) throw deptError
@@ -44,9 +44,9 @@ export default function DepartmentDetail() {
         // Fetch associated courses running under this foreign key relation
         const { data: courseData, error: courseError } = await supabase
           .from('courses')
-          .select('id, title, course_number, credits, description')
+          .select('course_id, title, course_code, credits, description')
           .eq('department_id', id)
-          .order('course_number', { ascending: true })
+          .order('course_code', { ascending: true })
 
         if (courseError) throw courseError
         setCourses((courseData as Course[]) || [])
@@ -112,10 +112,10 @@ export default function DepartmentDetail() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {courses.map((course) => (
-            <Card key={course.id} className="hover:shadow-sm border-slate-200 transition-shadow flex flex-col justify-between">
+            <Card key={course.course_id} className="hover:shadow-sm border-slate-200 transition-shadow flex flex-col justify-between">
               <CardHeader className="p-6 pb-4">
                 <span className="text-xs font-bold font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded w-fit">
-                  {department.code}-{course.course_number}
+                  {department.code}-{course.course_code}
                 </span>
                 <CardTitle className="text-lg font-bold text-slate-900 mt-2">{course.title}</CardTitle>
                 <p className="text-sm text-slate-500 mt-1 line-clamp-2">
@@ -123,9 +123,9 @@ export default function DepartmentDetail() {
                 </p>
               </CardHeader>
               <CardContent className="px-6 pb-6 pt-0 flex justify-between items-center border-t border-slate-50 mt-auto">
-                <span className="text-xs font-semibold text-slate-500">{course.credits} Academic Credits</span>
-                <Link to={`/courses/${course.id}`} className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
-                  View Requisites <ChevronRight size={16} />
+                <span className="text-xs font-semibold text-slate-500">{course.credits} Credits</span>
+                <Link to={`/courses/${course.course_id}`} className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
+                  Prerequisites <ChevronRight size={16} />
                 </Link>
               </CardContent>
             </Card>

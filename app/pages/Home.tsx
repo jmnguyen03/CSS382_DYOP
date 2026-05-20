@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { BookOpen, Award, Users, ChevronRight, Loader2 } from 'lucide-react'
 
@@ -10,12 +10,12 @@ interface Department {
 }
 
 interface Course {
-  id: string
+  course_id: string
   title: string
-  course_number: string
+  course_code: string
   description: string | null
   credits: number
-  departments: Department | null
+  department: Department | null
 }
 
 export default function Home() {
@@ -30,7 +30,7 @@ export default function Home() {
         // Fetches your real database courses and joins department fields dynamically
         const { data, error: dbError } = await supabase
           .from('courses')
-          .select('id, title, course_number, description, credits, departments(name, code)')
+          .select('course_id, title, course_code, description, credits, department(name, code)')
           .limit(3)
         
         if (dbError) throw dbError
@@ -107,10 +107,10 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredCourses.map((course) => (
-              <div key={course.id} className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between">
+              <div key={course.course_id} className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between">
                 <div className="p-6">
                   <span className="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-full font-mono">
-                    {course.departments?.code || 'UNKN'}-{course.course_number}
+                    {course.department?.code || 'UNKN'}-{course.course_code}
                   </span>
                   <h3 className="text-lg font-bold mt-3 text-slate-900">
                     {course.title}
@@ -121,8 +121,8 @@ export default function Home() {
                 </div>
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-between items-center text-xs text-slate-500">
                   <span className="font-medium text-slate-700">{course.credits} Credits</span>
-                  <Link to={`/courses/${course.id}`} className="text-blue-600 font-semibold hover:text-blue-700 inline-flex items-center gap-1">
-                    Requirements <ChevronRight size={14} />
+                  <Link to={`/courses/${course.course_id}`} className="text-blue-600 font-semibold hover:text-blue-700 inline-flex items-center gap-1">
+                    Prerequisites <ChevronRight size={14} />
                   </Link>
                 </div>
               </div>
