@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router'
+import { useParams, Link, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -22,6 +22,7 @@ interface CourseDetails {
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [course, setCourse] = useState<CourseDetails | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +56,7 @@ export default function CourseDetail() {
     return (
       <div className="flex h-64 items-center justify-center gap-2 text-slate-500">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-        <span>Syncing catalog profile metadata...</span>
+        <span>Loading course...</span>
       </div>
     )
   }
@@ -63,11 +64,11 @@ export default function CourseDetail() {
   if (error || !course) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
-        <Link to="/departments" className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
-          <ArrowLeft size={16} /> Back to Catalog
+        <Link to="/courses" className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
+          <ArrowLeft size={16} /> Back to Courses
         </Link>
         <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
-          <strong>Catalog Access Exception:</strong> {error || 'The requested record unique locator index string is invalid.'}
+          <strong>Error:</strong> {error || 'Course not found.'}
         </div>
       </div>
     )
@@ -75,15 +76,13 @@ export default function CourseDetail() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      {/* Dynamic Back Nav History */}
-      <Link 
-        to={`/departments/${course.department?.code ? '' : ''}`}
-        onClick={() => window.history.back()}
+      <button
+        onClick={() => navigate(-1)}
         className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 mb-6 group"
       >
-        <ArrowLeft size={16} className="transform group-hover:-translate-x-1 transition-transform" /> 
-        Back to Listings
-      </Link>
+        <ArrowLeft size={16} className="transform group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Information Panel */}
@@ -96,7 +95,7 @@ export default function CourseDetail() {
               {course.title}
             </h1>
             <p className="text-slate-500 font-medium text-sm flex items-center gap-1">
-              <GraduationCap size={16} /> Hosted by the Department of {course.department?.name}
+              <GraduationCap size={16} /> {course.department?.name}
             </p>
           </div>
 
