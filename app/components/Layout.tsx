@@ -23,7 +23,7 @@ export default function Layout() {
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl text-indigo-600">
             <GraduationCap className="h-6 width-6" />
-            <span>Smart Budget</span>
+            <span>CourseShelf</span>
           </Link>
           <div className="relative width-80 hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 width-4 text-slate-400" />
