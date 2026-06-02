@@ -1,27 +1,71 @@
-import { Routes, Route } from 'react-router'
-import Layout from './components/Layout'
-import Home from './pages/Home'
-import Courses from './pages/Courses'
-import CourseDetail from './pages/CourseDetail'
-import Departments from './pages/Departments'
-import DepartmentDetail from './pages/DepartmentDetail'
-import Professors from './pages/Professors'
-import ProfessorDetail from './pages/ProfessorDetail'
-import NotFound from './pages/NotFound'
+import { createBrowserRouter } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Departments from './pages/Departments';
+import DepartmentDetail from './pages/DepartmentDetail';
+import Majors from './pages/Majors';
+import MajorDetail from './pages/MajorDetail';
+import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
+import Professors from './pages/Professors';
+import ProfessorDetail from './pages/ProfessorDetail';
+import NotFound from './pages/NotFound';
+import {Login} from './pages/Login';
+import {Signup} from './pages/Signup';
 
-export default function AppRoutes() {
-  return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route path="/departments" element={<Departments />} />
-        <Route path="/departments/:id" element={<DepartmentDetail />} />
-        <Route path="/professors" element={<Professors />} />
-        <Route path="/professors/:id" element={<ProfessorDetail />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
-  )
-}
+
+export const router = createBrowserRouter([
+  // 1. Independent Auth Paths (Renders without application Sidebar wrapper)
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/signup',
+    element: <Signup />,
+  },
+  
+  // 2. Main Application App Layout Paths
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: 'departments',
+        children: [
+          { index: true, element: <Departments /> },
+          { path: ':id', element: <DepartmentDetail /> },
+        ],
+      },
+      {
+        path: 'majors',
+        children: [
+          { index: true, element: <Majors /> },
+          { path: ':id', element: <MajorDetail /> },
+        ],
+      },
+      {
+        path: 'courses',
+        children: [
+          { index: true, element: <Courses /> },
+          { path: ':id', element: <CourseDetail /> },
+        ],
+      },
+      {
+        path: 'professors',
+        children: [
+          { index: true, element: <Professors /> },
+          { path: ':id', element: <ProfessorDetail /> },
+        ],
+      },
+      {
+        path: '*',
+        element: <NotFound />,
+      },
+    ],
+  },
+]);

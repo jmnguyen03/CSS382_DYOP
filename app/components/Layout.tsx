@@ -1,59 +1,118 @@
-import { Outlet, Link, useLocation } from 'react-router'
-import { GraduationCap, Home, Building2 } from 'lucide-react'
+import { Outlet, Link, useNavigate } from 'react-router';
+import { 
+  BookOpen, 
+  Layers, 
+  GraduationCap, 
+  Award, 
+  Search, 
+  Bell, 
+  User,
+  LogIn,
+  UserPlus
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 export default function Layout() {
-  const location = useLocation()
-
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/'
-    }
-    return location.pathname.startsWith(path)
-  }
-
-  const linkClass = (path: string) => {
-    const base = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-    return isActive(path)
-      ? `${base} bg-blue-50 text-blue-700 font-semibold`
-      : `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900`
-  }
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
-      {/* Central Navigation Bar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo Header Brand */}
-          <Link to="/" className="flex items-center gap-2 text-blue-700 font-extrabold text-xl tracking-tight">
-            <GraduationCap className="h-6 w-6" />
-            <span>CourseRegistry</span>
+    <div className="min-height-screen bg-slate-50 flex flex-col">
+      {/* Top Navbar Header Section */}
+      <header className="bg-white border-b border-slate-200 h-16 fixed top-0 left-0 right-0 z-50 px-6 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-indigo-600">
+            <GraduationCap className="h-6 width-6" />
+            <span>Smart Budget</span>
           </Link>
-
-          {/* Navigation Action Links */}
-          <div className="flex items-center gap-2">
-            <Link to="/" className={linkClass('/')}>
-              <Home className="h-4 w-4" />
-              <span>Home</span>
-            </Link>
-            <Link to="/departments" className={linkClass('/departments')}>
-              <Building2 className="h-4 w-4" />
-              <span>Departments</span>
-            </Link>
+          <div className="relative width-80 hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 width-4 text-slate-400" />
+            <Input 
+              type="search" 
+              placeholder="Search courses, professors..." 
+              className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+            />
           </div>
         </div>
-      </nav>
 
-      {/* Embedded Route Child View Yield Port */}
-      <div className="flex-1 w-full">
-        <Outlet />
-      </div>
+        {/* Top Right Header Actions Bar */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="text-slate-600">
+            <Bell className="h-5 width-5" />
+          </Button>
 
-      {/* Global Standard Site Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 px-6 text-center text-xs text-slate-400 font-medium">
-        <div className="max-w-6xl mx-auto">
-          &copy; {new Date().getFullYear()} University Course Registration Management Hub. All rights reserved.
+          <Button variant="ghost" size="icon" className="text-slate-600">
+            <User className="h-5 width-5" />
+          </Button>
+
+          <div className="h-5 width-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+          {/* New Authentication Navigation Buttons */}
+          <Button 
+            variant="ghost" 
+            className="text-slate-700 font-medium gap-2 hover:bg-slate-100 transition-colors"
+            onClick={() => navigate('/login')}
+          >
+            <LogIn className="h-4 width-4" />
+            <span className="hidden sm:inline">Sign In</span>
+          </Button>
+
+          <Button 
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium gap-2 shadow-sm transition-colors"
+            onClick={() => navigate('/signup')}
+          >
+            <UserPlus className="h-4 width-4" />
+            <span className="hidden sm:inline">Sign Up</span>
+          </Button>
         </div>
-      </footer>
+      </header>
+
+      <div className="flex flex-1 pt-16">
+        {/* Left Sidebar Menu */}
+        <aside className="width-64 bg-white border-r border-slate-200 fixed bottom-0 top-16 left-0 hidden lg:flex flex-col p-4 justify-between">
+          <div className="flex flex-col gap-1">
+            <Link 
+              to="/courses" 
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
+            >
+              <BookOpen className="h-5 width-5" />
+              <span>Courses</span>
+            </Link>
+            <Link 
+              to="/departments" 
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
+            >
+              <Layers className="h-5 width-5" />
+              <span>Departments</span>
+            </Link>
+            <Link 
+              to="/majors" 
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
+            >
+              <GraduationCap className="h-5 width-5" />
+              <span>Majors</span>
+            </Link>
+            <Link 
+              to="/professors" 
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
+            >
+              <Award className="h-5 width-5" />
+              <span>Professors</span>
+            </Link>
+          </div>
+          
+          <div className="text-xs text-slate-400 px-4">
+            &copy; 2026 Smart Budget
+          </div>
+        </aside>
+
+        {/* Dynamic Nested Page Content Router Body */}
+        <main className="flex-1 lg:pl-64 p-8 bg-slate-50">
+          <div className="max-width-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
-  )
+  );
 }
