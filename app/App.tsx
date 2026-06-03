@@ -12,6 +12,7 @@ import ProfessorDetail from './pages/ProfessorDetail';
 import NotFound from './pages/NotFound';
 import {Login} from './pages/Login';
 import {Signup} from './pages/Signup';
+import Schedule from './pages/Schedule';
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="majors/:id" element={<MajorDetail />} />
           <Route path="professors" element={<Professors />} />
           <Route path="professors/:id" element={<ProfessorDetail />} />
+          <Route path="schedule" element={<Schedule />} />
           <Route path="textbooks" element={<Navigate to="/" replace />} />
           
           {/* Wildcard catch-all specifically for routes nested under the main frame */}

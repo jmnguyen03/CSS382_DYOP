@@ -1,20 +1,37 @@
 import { Outlet, Link, useNavigate } from 'react-router';
-import { 
-  BookOpen, 
-  Layers, 
-  GraduationCap, 
-  Award, 
-  Search, 
-  Bell, 
+import {
+  BookOpen,
+  Layers,
+  GraduationCap,
+  Award,
+  Search,
+  Bell,
   User,
   LogIn,
-  UserPlus
+  UserPlus,
+  CalendarDays,
+  LogOut,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
   const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="min-height-screen bg-slate-50 flex flex-col">
@@ -27,9 +44,9 @@ export default function Layout() {
           </Link>
           <div className="relative width-80 hidden md:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 width-4 text-slate-400" />
-            <Input 
-              type="search" 
-              placeholder="Search courses, professors..." 
+            <Input
+              type="search"
+              placeholder="Search courses, professors..."
               className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
             />
           </div>
@@ -41,29 +58,51 @@ export default function Layout() {
             <Bell className="h-5 width-5" />
           </Button>
 
-          <Button variant="ghost" size="icon" className="text-slate-600">
-            <User className="h-5 width-5" />
-          </Button>
-
-          <div className="h-5 width-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
-
-          {/* New Authentication Navigation Buttons */}
-          <Button 
-            variant="ghost" 
-            className="text-slate-700 font-medium gap-2 hover:bg-slate-100 transition-colors"
-            onClick={() => navigate('/login')}
-          >
-            <LogIn className="h-4 width-4" />
-            <span className="hidden sm:inline">Sign In</span>
-          </Button>
-
-          <Button 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium gap-2 shadow-sm transition-colors"
-            onClick={() => navigate('/signup')}
-          >
-            <UserPlus className="h-4 width-4" />
-            <span className="hidden sm:inline">Sign Up</span>
-          </Button>
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-md text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none">
+                    <User className="h-5 w-5" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuLabel className="text-xs text-slate-500 font-normal truncate">
+                      {user.email}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/schedule')} className="cursor-pointer gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      My Schedule
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-2 text-red-600 focus:text-red-600">
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <div className="h-5 width-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+                  <Button
+                    variant="ghost"
+                    className="text-slate-700 font-medium gap-2 hover:bg-slate-100 transition-colors"
+                    onClick={() => navigate('/login')}
+                  >
+                    <LogIn className="h-4 width-4" />
+                    <span className="hidden sm:inline">Sign In</span>
+                  </Button>
+                  <Button
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium gap-2 shadow-sm transition-colors"
+                    onClick={() => navigate('/signup')}
+                  >
+                    <UserPlus className="h-4 width-4" />
+                    <span className="hidden sm:inline">Sign Up</span>
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </div>
       </header>
 
@@ -71,36 +110,45 @@ export default function Layout() {
         {/* Left Sidebar Menu */}
         <aside className="width-64 bg-white border-r border-slate-200 fixed bottom-0 top-16 left-0 hidden lg:flex flex-col p-4 justify-between">
           <div className="flex flex-col gap-1">
-            <Link 
-              to="/courses" 
+            <Link
+              to="/courses"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
             >
               <BookOpen className="h-5 width-5" />
               <span>Courses</span>
             </Link>
-            <Link 
-              to="/departments" 
+            <Link
+              to="/departments"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
             >
               <Layers className="h-5 width-5" />
               <span>Departments</span>
             </Link>
-            <Link 
-              to="/majors" 
+            <Link
+              to="/majors"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
             >
               <GraduationCap className="h-5 width-5" />
               <span>Majors</span>
             </Link>
-            <Link 
-              to="/professors" 
+            <Link
+              to="/professors"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
             >
               <Award className="h-5 width-5" />
               <span>Professors</span>
             </Link>
+            {user && (
+              <Link
+                to="/schedule"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-indigo-600 font-medium transition-all"
+              >
+                <CalendarDays className="h-5 w-5" />
+                <span>My Schedule</span>
+              </Link>
+            )}
           </div>
-          
+
           <div className="text-xs text-slate-400 px-4">
             &copy; 2026 Smart Budget
           </div>

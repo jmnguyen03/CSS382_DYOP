@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-accent: #f8fafc;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #dc2626;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+}
