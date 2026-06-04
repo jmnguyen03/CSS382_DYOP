@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog'
 import { Loader2, ArrowLeft, Bookmark, Clock, GraduationCap } from 'lucide-react'
 
 interface Department {
@@ -20,20 +28,39 @@ interface CourseDetails {
   department: Department | null
 }
 
+const QUARTER_ORDER = ['Winter', 'Spring', 'Summer', 'Autumn']
+
+function generateQuarters(): string[] {
+  const quarters: string[] = []
+  for (let year = 2026; year <= 2028; year++) {
+    for (const name of QUARTER_ORDER) {
+      quarters.push(`${name} ${year}`)
+    }
+  }
+  return quarters
+}
+
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [course, setCourse] = useState<CourseDetails | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [isRegistered, setIsRegistered] = useState<boolean>(false)
+  const [enrolledQuarter, setEnrolledQuarter] = useState<string | null>(null)
+  const [scheduleLoading, setScheduleLoading] = useState<boolean>(false)
+  const [showDialog, setShowDialog] = useState(false)
+  const [selectedQuarter, setSelectedQuarter] = useState('Summer 2026')
+
+  const quarters = generateQuarters()
 
   useEffect(() => {
     async function fetchCourseDetails() {
       if (!id) return
       try {
         setLoading(true)
-        
+
         const { data, error: dbError } = await supabase
           .from('courses')
           .select('course_id, title, course_code, credits, description, prerequisites, department(name, code)')
@@ -42,6 +69,17 @@ export default function CourseDetail() {
 
         if (dbError) throw dbError
         setCourse(data as unknown as CourseDetails)
+
+        if (user) {
+          const { data: scheduleData } = await supabase
+            .from('user_schedule')
+            .select('id, quarter')
+            .eq('user_id', user.id)
+            .eq('course_id', id)
+            .maybeSingle()
+          setIsRegistered(!!scheduleData)
+          setEnrolledQuarter(scheduleData?.quarter ?? null)
+        }
       } catch (err: any) {
         console.error('Error fetching course records:', err)
         setError(err.message || 'Unable to sync details for this section module.')
@@ -50,7 +88,38 @@ export default function CourseDetail() {
       }
     }
     fetchCourseDetails()
-  }, [id])
+  }, [id, user])
+
+  const handleAddClick = () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setShowDialog(true)
+  }
+
+  const handleConfirmAdd = async () => {
+    setShowDialog(false)
+    setScheduleLoading(true)
+    await supabase
+      .from('user_schedule')
+      .insert({ user_id: user!.id, course_id: id, quarter: selectedQuarter })
+    setIsRegistered(true)
+    setEnrolledQuarter(selectedQuarter)
+    setScheduleLoading(false)
+  }
+
+  const handleRemove = async () => {
+    setScheduleLoading(true)
+    await supabase
+      .from('user_schedule')
+      .delete()
+      .eq('user_id', user!.id)
+      .eq('course_id', id)
+    setIsRegistered(false)
+    setEnrolledQuarter(null)
+    setScheduleLoading(false)
+  }
 
   if (loading) {
     return (
@@ -102,10 +171,9 @@ export default function CourseDetail() {
           <div className="prose max-w-none">
             <h3 className="text-lg font-bold text-slate-800 mb-2">Course Abstract</h3>
             <p className="text-slate-600 leading-relaxed bg-white p-5 rounded-xl border border-slate-200">
-              {course.description || 'No descriptive statement record has been cataloged for this syllabus unit module structure point.'}
+              {course.description || 'No description available.'}
             </p>
           </div>
-
         </div>
 
         {/* Sidebar Controls Card */}
@@ -138,20 +206,64 @@ export default function CourseDetail() {
                 </div>
               </div>
 
-              <Button 
-                onClick={() => setIsRegistered(!isRegistered)}
-                className={`w-full font-bold py-5 rounded-xl transition-all ${
-                  isRegistered 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                {isRegistered ? 'Successfully Enrolled' : 'Add to Academic Schedule'}
-              </Button>
+              {isRegistered ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-center text-emerald-600 font-semibold">
+                    Enrolled — {enrolledQuarter}
+                  </p>
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemove}
+                    disabled={scheduleLoading}
+                    className="w-full font-bold py-5 rounded-xl flex items-center justify-center gap-2"
+                  >
+                    {scheduleLoading && <Loader2 size={16} className="animate-spin" />}
+                    Remove from Schedule
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleAddClick}
+                  disabled={scheduleLoading}
+                  className="w-full font-bold py-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-2"
+                >
+                  {scheduleLoading && <Loader2 size={16} className="animate-spin" />}
+                  Add to Academic Schedule
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Quarter Picker Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Choose a Quarter</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <p className="text-sm text-slate-500 mb-3">
+              Which quarter are you planning to take <span className="font-semibold text-slate-700">{course.title}</span>?
+            </p>
+            <select
+              value={selectedQuarter}
+              onChange={e => setSelectedQuarter(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {quarters.map(q => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+            <Button onClick={handleConfirmAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Add to Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
