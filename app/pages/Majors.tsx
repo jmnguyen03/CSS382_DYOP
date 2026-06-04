@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { Loader2, Award, ChevronRight } from 'lucide-react'
 

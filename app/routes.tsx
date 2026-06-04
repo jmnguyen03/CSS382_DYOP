@@ -10,12 +10,12 @@ import CourseDetail from './pages/CourseDetail';
 import Professors from './pages/Professors';
 import ProfessorDetail from './pages/ProfessorDetail';
 import NotFound from './pages/NotFound';
-import {Login} from './pages/Login';
-import {Signup} from './pages/Signup';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
 
+import SubmitResource from './pages/SubmitResource';
 
 export const router = createBrowserRouter([
-  // 1. Independent Auth Paths (Renders without application Sidebar wrapper)
   {
     path: '/login',
     element: <Login />,
@@ -24,8 +24,6 @@ export const router = createBrowserRouter([
     path: '/signup',
     element: <Signup />,
   },
-  
-  // 2. Main Application App Layout Paths
   {
     path: '/',
     element: <Layout />,
@@ -54,6 +52,10 @@ export const router = createBrowserRouter([
           { index: true, element: <Courses /> },
           { path: ':id', element: <CourseDetail /> },
         ],
+      },
+      {
+        path: 'submit-material',
+        element: <SubmitResource />,
       },
       {
         path: 'professors',
