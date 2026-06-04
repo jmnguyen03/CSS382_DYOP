@@ -1,19 +1,80 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { ChevronLeft, Upload, FileText, Link2, Hash, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router'; // Strict React Router v7 framework build configuration mapping
+import { ChevronLeft, Upload, FileText, Link2, Search, Check, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+
+interface CourseSearchResult {
+  course_id: string;
+  course_code: string; // Updated to match your exact SQL schema definition tracking parameter
+  title: string;
+}
 
 export function SubmitResource() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Form Field Input States
   const [formData, setFormData] = useState({
-    course_id: '',
     submitted_url: '',
     reason: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<CourseSearchResult | null>(null);
+  
+  // Dynamic Live Query States
+  const [courses, setCourses] = useState<CourseSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Notification Banners Trigger States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Debounced Live Server Lookup Interface Trigger
+  useEffect(() => {
+    // Blocks query execution on empty inputs or matching current active selections
+    if (searchQuery.trim().length < 2 || (selectedCourse && searchQuery === `${selectedCourse.course_code} - ${selectedCourse.title}`)) {
+      setCourses([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const cleanQuery = searchQuery.trim();
+        
+        // CORRECTION: Adjusted the column search key query from .or('code...') to .or('course_code...')
+        const { data, error } = await supabase
+          .from('courses') 
+          .select('course_id, course_code, title')
+          .or(`course_code.ilike.%${cleanQuery}%,title.ilike.%${cleanQuery}%`)
+          .limit(10); // Performance boundary layout cap
+
+        if (error) throw error;
+        setCourses(data || []);
+        setIsDropdownOpen(true);
+      } catch (err: any) {
+        console.error('Supabase async remote course fetch failed:', err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300); // 300ms input throttling limits database load
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, selectedCourse]);
+
+  // Click handler to toggle list view drop when clicking background components
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -22,23 +83,23 @@ export function SubmitResource() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedCourse) {
+      setSubmitStatus({ type: 'error', message: 'Please select a course item using the drop lookup view list.' });
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus(null);
 
     try {
-      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-      if (formData.course_id && !uuidRegex.test(formData.course_id.trim())) {
-        throw new Error('Associated Course ID must be a valid UUID sequence layout string.');
-      }
-
       const submissionPayload = {
-        course_id: formData.course_id.trim() || null,
+        course_id: selectedCourse.course_id, // Behind-the-scenes relational UUID map constraint entry
         submitted_url: formData.submitted_url.trim(),
         reason: formData.reason.trim() || null,
         status: 'pending'
       };
 
-      // Connect explicitly to your public.request_submission database layout profile configuration
       const { error } = await supabase
         .from('request_submission')
         .insert([submissionPayload]);
@@ -47,19 +108,21 @@ export function SubmitResource() {
 
       setSubmitStatus({
         type: 'success',
-        message: 'Your material contribution proposal has been saved for verification tracking.'
+        message: `Thank you! Material suggestions for ${selectedCourse.course_code} successfully transmitted for validation tracking.`
       });
-      setFormData({ course_id: '', submitted_url: '', reason: '' });
+      setFormData({ submitted_url: '', reason: '' });
+      setSelectedCourse(null);
+      setSearchQuery('');
 
       setTimeout(() => {
         navigate('/courses');
-      }, 1500);
+      }, 2000);
 
     } catch (error: any) {
-      console.error('Database connection insert fail context:', error);
+      console.error('Database payload commit failure breakdown:', error);
       setSubmitStatus({
         type: 'error',
-        message: `Submission Failure: ${error.message || 'Check network properties.'}`
+        message: `Submission Failure: ${error.message || 'Check connection context.'}`
       });
     } finally {
       setIsSubmitting(false);
@@ -84,7 +147,7 @@ export function SubmitResource() {
               Submit Course Material
             </h1>
             <p className="text-sm text-slate-500 mt-1 mb-0">
-              Provide textbooks or syllabus details linking directly onto your course system indices.
+              Search by course numbers or keywords. Returns matches instantly across large indexing scopes.
             </p>
           </div>
 
@@ -98,23 +161,76 @@ export function SubmitResource() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="course_id" className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-                <Hash size={15} className="text-slate-400" />
-                Associated Course ID (UUID) *
+            {/* Debounced Input Area Container */}
+            <div className="relative" ref={dropdownRef}>
+              <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                <Search size={15} className="text-slate-400" />
+                Select Associated Course *
               </label>
-              <input
-                id="course_id"
-                name="course_id"
-                type="text"
-                value={formData.course_id}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono bg-white text-slate-900"
-                placeholder="e.g., c9a64738-d113-4ec2-a5d9-762493012abc"
-              />
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 pl-10 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm bg-white text-slate-900 font-normal"
+                  placeholder="Type to find course catalog matching e.g., CSS 382..."
+                  value={searchQuery}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsDropdownOpen(true);
+                    if (selectedCourse) setSelectedCourse(null);
+                  }}
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                
+                {searching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Option List Drawer Stack */}
+              {isDropdownOpen && searchQuery.trim().length >= 2 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {courses.length > 0 ? (
+                    courses.map((course) => (
+                      <button
+                        key={course.course_id}
+                        type="button"
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 flex items-center justify-between text-sm transition-colors border-none bg-transparent cursor-pointer text-slate-700 font-normal"
+                        onClick={() => {
+                          setSelectedCourse(course);
+                          setSearchQuery(`${course.course_code} - ${course.title}`);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <div>
+                          <span className="font-semibold text-indigo-600 mr-2">{course.course_code}</span>
+                          <span className="text-slate-800">{course.title}</span>
+                        </div>
+                        {selectedCourse?.course_id === course.course_id && (
+                          <Check size={16} className="text-indigo-600 shrink-0" />
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    !searching && (
+                      <div className="px-4 py-3 text-sm text-slate-500 text-center">
+                        No catalog matches found inside current index.
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              {selectedCourse && (
+                <p className="text-xs text-emerald-600 font-medium mt-1 mb-0">
+                  ✓ Target Relational Identity Key Set: <span className="font-mono bg-emerald-50 px-1 rounded border border-emerald-100">{selectedCourse.course_id}</span>
+                </p>
+              )}
             </div>
 
+            {/* Resource URL Box */}
             <div>
               <label htmlFor="submitted_url" className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                 <Link2 size={15} className="text-slate-400" />
@@ -125,13 +241,14 @@ export function SubmitResource() {
                 name="submitted_url"
                 type="url"
                 value={formData.submitted_url}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white text-slate-900"
-                placeholder="https://example.com/free-textbook-pdf"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm bg-white text-slate-900"
+                placeholder="https://openstax.org/details/books/..."
               />
             </div>
 
+            {/* Description Textarea Field Box */}
             <div>
               <label htmlFor="reason" className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
                 <FileText size={15} className="text-slate-400" />
@@ -142,14 +259,14 @@ export function SubmitResource() {
                 name="reason"
                 rows={4}
                 value={formData.reason}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white text-slate-900 resize-none font-normal"
-                placeholder="Describe material conditions..."
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm bg-white text-slate-900 resize-none font-normal"
+                placeholder="Provide short comments layout text matching textbook prerequisites parameters..."
               />
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
-              <p className="text-xs text-slate-400 m-0">* Required field reference constraint</p>
+              <p className="text-xs text-slate-400 m-0">* Required field reference constraints</p>
               <button
                 type="submit"
                 disabled={isSubmitting}
