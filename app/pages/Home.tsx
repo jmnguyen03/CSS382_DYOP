@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { BookOpen, Award, Users, ChevronRight, Loader2, Search, GraduationCap, BookMarked, ChevronDown } from 'lucide-react'
 // GraduationCap used in search results professors section

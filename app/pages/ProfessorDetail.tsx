@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabaseClient'
 import { Loader2, BookOpen, ChevronRight, ArrowLeft, Star, GraduationCap, Users } from 'lucide-react'
 
