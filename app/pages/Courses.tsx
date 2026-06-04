@@ -64,13 +64,16 @@ export default function Courses() {
       if (!q) return deptMatch
       const deptCode = c.department?.code?.toLowerCase() ?? ''
       const combined = `${deptCode} ${c.course_code}`.toLowerCase()
+      const combinedNorm = combined.replace(/[\s\-_]+/g, '')
+      const qNorm = q.replace(/[\s\-_]+/g, '')
       const textMatch =
         c.title.toLowerCase().includes(q) ||
         c.course_code.toLowerCase().includes(q) ||
         c.description?.toLowerCase().includes(q) ||
         c.department?.name.toLowerCase().includes(q) ||
         deptCode.includes(q) ||
-        combined.includes(q)
+        combined.includes(q) ||
+        combinedNorm.includes(qNorm)
       return deptMatch && textMatch
     })
   }, [allCourses, search, deptFilter])
