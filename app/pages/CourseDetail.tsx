@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog'
-import { Loader2, ArrowLeft, Bookmark, Clock, GraduationCap } from 'lucide-react'
+import { Loader2, ArrowLeft, Bookmark, Clock, GraduationCap, BookOpen, ExternalLink, ThumbsUp } from 'lucide-react'
 
 interface Department {
   name: string
@@ -26,6 +26,16 @@ interface CourseDetails {
   description: string | null
   prerequisites: string | null
   department: Department | null
+}
+
+interface Resource {
+  resource_id: string
+  title: string
+  source_url: string | null
+  description: string | null
+  license: string | null
+  freely_readable: boolean
+  vote_count: number
 }
 
 const QUARTER_ORDER = ['Winter', 'Spring', 'Summer', 'Autumn']
@@ -52,6 +62,7 @@ export default function CourseDetail() {
   const [scheduleLoading, setScheduleLoading] = useState<boolean>(false)
   const [showDialog, setShowDialog] = useState(false)
   const [selectedQuarter, setSelectedQuarter] = useState('Summer 2026')
+  const [resources, setResources] = useState<Resource[]>([])
 
   const quarters = generateQuarters()
 
@@ -69,6 +80,13 @@ export default function CourseDetail() {
 
         if (dbError) throw dbError
         setCourse(data as unknown as CourseDetails)
+
+        const { data: resourceData } = await supabase
+          .from('resources')
+          .select('resource_id, title, source_url, description, license, freely_readable, vote_count')
+          .eq('course_id', id)
+          .order('vote_count', { ascending: false })
+        setResources((resourceData as Resource[]) ?? [])
 
         if (user) {
           const { data: scheduleData } = await supabase
@@ -173,6 +191,47 @@ export default function CourseDetail() {
             <p className="text-slate-600 leading-relaxed bg-white p-5 rounded-xl border border-slate-200">
               {course.description || 'No description available.'}
             </p>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <BookOpen size={20} /> Textbooks &amp; Resources
+            </h3>
+            {resources.length === 0 ? (
+              <p className="text-slate-400 text-sm italic">No resources listed for this course.</p>
+            ) : (
+              <ul className="space-y-3">
+                {resources.map((r) => (
+                  <li key={r.resource_id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-semibold text-slate-800 text-sm leading-snug">{r.title}</div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {r.freely_readable && (
+                          <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">Free</span>
+                        )}
+                        {r.source_url && (
+                          <a
+                            href={r.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    {r.description && (
+                      <p className="text-slate-500 text-xs leading-relaxed">{r.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                      {r.license && <span>{r.license}</span>}
+                      <span className="flex items-center gap-1"><ThumbsUp size={11} /> {r.vote_count}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
